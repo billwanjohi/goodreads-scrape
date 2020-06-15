@@ -20,7 +20,7 @@ type Book struct {
 }
 
 func parseRatings(book *Book) {
-	r, err := regexp.Compile(`(\d\.\d{2}) avg rating — (\d+) ratings?`)
+	r, err := regexp.Compile(`(\d\.\d{2}) avg rating — ((\d+),)?(\d+) ratings?`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,11 +32,20 @@ func parseRatings(book *Book) {
 	}
 	book.AvgRating = uint16(avgRating)
 
-	numRatings, err := strconv.ParseUint(groups[2], 10, 16)
+	ones, err := strconv.ParseUint(groups[4], 10, 16)
 	if err != nil {
 		log.Fatal(err)
 	}
-	book.NumRatings = uint16(numRatings)
+
+	var thousands uint64 = 0
+	if groups[3] != "" {
+		thousands, err = strconv.ParseUint(groups[3], 10, 16)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	book.NumRatings = uint16(thousands*1000 + ones)
 }
 
 func handleBookElement(bookElement *colly.HTMLElement) {
@@ -86,5 +95,5 @@ func main() {
 		log.Println("Visiting", r.URL.String())
 	})
 
-	c.Visit("https://www.goodreads.com/search?utf8=%E2%9C%93&q=baby+sign+language&search_type=books")
+	c.Visit("https://www.goodreads.com/author/list/12581.Cory_Doctorow")
 }
